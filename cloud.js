@@ -1,0 +1,47 @@
+import { firebaseConfig } from './firebase-config.js';
+const $=id=>document.getElementById(id);
+const status=(s)=>{$('cloudStatus').textContent=s;};
+const missing=Object.values(firebaseConfig).some(v=>String(v).includes('COLE_'));
+let auth,db,currentUser=null,docRef=null,ready=false,queue=Promise.resolve(),hydrating=false;
+function error(e){console.error(e);status('Falha: '+(e.code||e.message||'erro desconhecido'));}
+if(missing){status('Para conectar: preencha firebase-config.js e publique as regras do Firestore.');}
+else {start().catch(error);}
+async function start(){
+ const [{initializeApp},{getAuth,setPersistence,browserLocalPersistence,onAuthStateChanged,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut},{getFirestore,doc,getDoc,setDoc,serverTimestamp}] = await Promise.all([
+  import('https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js'),
+  import('https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js'),
+  import('https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js')
+ ]);
+ const app=initializeApp(firebaseConfig);auth=getAuth(app);db=getFirestore(app);
+ await setPersistence(auth,browserLocalPersistence);
+ async function fetchRemote(){if(!docRef)throw Error('Faça login primeiro');const snap=await getDoc(docRef);return snap.exists()?snap.data().packet:null;}
+ async function push(packet){if(!currentUser||!packet||!ready)return;await setDoc(docRef,{packet,updatedAt:serverTimestamp()});status('Cofre criptografado sincronizado.');}
+ window.addEventListener('mc-vault-updated',ev=>{
+  if(!ready||hydrating)return;
+  const packet=ev.detail;queue=queue.then(()=>push(packet)).catch(error);
+ });
+ $('cloudLogin').onclick=async()=>{try{status('Entrando...');await signInWithEmailAndPassword(auth,$('cloudEmail').value.trim(),$('cloudPassword').value);$('cloudPassword').value=''}catch(e){error(e)}};
+ $('cloudSignup').onclick=async()=>{try{status('Criando conta...');await createUserWithEmailAndPassword(auth,$('cloudEmail').value.trim(),$('cloudPassword').value);$('cloudPassword').value=''}catch(e){error(e)}};
+ $('cloudLogout').onclick=async()=>{try{ready=false;await signOut(auth)}catch(e){error(e)}};
+ $('cloudUpload').onclick=async()=>{try{const p=window.MeuControleCloud.getPacket();if(!p)throw Error('Ative o cofre criptografado primeiro.');const remote=await fetchRemote();if(remote&&!confirm('Sobrescrever os dados na nuvem com o cofre deste aparelho? Faça backup antes se houver diferenças.'))return;await push(p)}catch(e){error(e)}};
+ $('cloudDownload').onclick=async()=>{try{const remote=await fetchRemote();if(!remote)throw Error('Ainda não existe um cofre na nuvem.');if(!confirm('Substituir o cofre local pelo backup criptografado na nuvem? Faça backup local antes.'))return;hydrating=true;await window.MeuControleCloud.importEncrypted(remote);status('Cofre baixado. Digite a senha do cofre para abrir.')}catch(e){error(e)}finally{hydrating=false}};
+ onAuthStateChanged(auth,async user=>{
+   ready=false;currentUser=user;
+   $('cloudLoggedIn').classList.toggle('hidden',!user);$('cloudLoggedOut').classList.toggle('hidden',!!user);
+   if(!user){docRef=null;status('Sem login. Seus dados locais permanecem no iPhone.');return;}
+   $('cloudAccount').textContent='Conectado: '+(user.email||'conta autenticada');
+   docRef=doc(db,'users',user.uid,'private','vault');
+   try {
+     status('Verificando cofre da conta...');
+     const remote=await fetchRemote();
+     if(!remote){status('Conta conectada. Ative o cofre e envie seus dados.');ready=true;return;}
+     if(!window.MeuControleCloud.hasLocalData()){
+       hydrating=true;await window.MeuControleCloud.importEncrypted(remote);hydrating=false;
+       status('Cofre recebido. Digite a senha do cofre para abrir.');
+     }else{
+       status('Conta conectada. Há dados locais e na nuvem: escolha Enviar ou Baixar, após fazer backup.');
+     }
+     ready=true;
+   }catch(e){hydrating=false;error(e)}
+ });
+}
