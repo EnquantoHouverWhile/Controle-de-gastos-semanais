@@ -1,0 +1,19 @@
+MEU CONTROLE 4.1.1 — CORREÇÃO DA TELA DE LOGIN
+
+1. Faça backup dos gastos antes de atualizar.
+2. No repositório EnquantoHouverWhile/Controle-de-gastos-semanais, envie TODOS os arquivos extraídos deste ZIP na raiz, substituindo os anteriores.
+3. Confirme Settings > Pages: main, /(root).
+4. No Firebase Authentication > Sign-in method, habilite Email/Password.
+5. Em Authentication > Settings > Authorized domains, adicione enquantohouverwhile.github.io.
+6. No Firestore > Rules, publique as regras incluídas (se ainda não fez).
+7. Aguarde o novo deploy no GitHub Pages e abra pelo Safari o mesmo link que já usa.
+8. Se ainda aparecer versão antiga, abra o link no Safari, atualize-o e então feche/reabra o aplicativo da tela inicial. Não apague dados do site para forçar atualização.
+
+CORREÇÃO
+- Previne recarregamento do formulário quando Firebase não inicia.
+- Mostra erros na interface, inclusive rede, provedor desativado ou domínio não autorizado.
+- Adiciona limite de espera de carregamento.
+- Cache do aplicativo atualizado para v4.1.1.
+
+LIMITAÇÃO
+Essa correção não implementa Face ID nem isola inteiramente os dados locais entre contas diferentes usando o mesmo navegador. Teste com uma conta antes de inserir gastos reais. O cofre ainda pode exigir senha adicional.

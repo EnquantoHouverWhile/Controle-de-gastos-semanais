@@ -26,3 +26,6 @@
 - Sem conexão, o salvamento local continua; depois de reconectar e estar autenticado, uma alteração gera novo envio. Para preservar *todas* as alterações de todos os dispositivos, será necessário implementar fila de mudanças e resolução de conflitos.
 - Recomenda-se um segundo fator de autenticação na conta Firebase quando disponível e testes reais de segurança antes de armazenar informações críticas.
 - Teste criação de conta, sincronização, restaurar, sair e entrar, bloqueio e backup antes de substituir sua versão principal.
+
+## Revisão de segurança 4.1.3
+Leia `RELATORIO-SEGURANCA.md`. Publique as novas `firestore.rules` no Firebase antes de testar. O novo bloqueio por UID impede troca de contas no mesmo armazenamento local para evitar vazamento cruzado. Faça backup dos gastos antes de atualizar e não exclua dados ou reinstale a PWA para tentar contornar a proteção.
